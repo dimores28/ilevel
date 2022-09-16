@@ -1,15 +1,14 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png" />
-  <HelloWorld msg="Welcome to Your Vue.js App" />
+  <img alt="logo" src="./assets/logo.png" width="150" />
+  <v-select></v-select>
 </template>
 
 <script>
-import HelloWorld from "./components/HelloWorld.vue";
-
+import vSelect from "@/components/select";
 export default {
   name: "App",
   components: {
-    HelloWorld,
+    vSelect,
   },
 };
 </script>
