@@ -1,15 +1,32 @@
 <template>
   <div ref="container" class="select">
-    <input type="text" class="select__input" v-bind="inputProps" />
+    <input
+      type="text"
+      class="select__input"
+      :class="inputClass"
+      :style="inputStyle"
+      :placeholder="placeholder"
+      :tabindex="!disabled ? tabindex : -1"
+      :disabled="disabled"
+      v-model="inputValue"
+      @input="onInput"
+      @focus="onFocus"
+      @blur="onBlur"
+      @keydown="onKeyDown"
+      @change="onChange"
+    />
 
-    <div class="select__options">
-      <ul id="pv_id_3_list" class="select__items" role="listbox">
+    <div v-if="overlayVisible" ref="overlayRef" class="select__options">
+      <ul ref="optionsContainer" class="select__items" role="listbox">
         <li
-          v-for="(option, i) in suggestions"
-          :key="i"
+          v-for="option in autocomplete"
+          :key="option.value"
           class="select__item"
           role="option"
           :aria-label="option.label"
+          tabindex="-1"
+          @click="onOptionSelect($event, option)"
+          @keydown.enter="add(option)"
         >
           {{ option.label }}
         </li>
@@ -26,11 +43,139 @@ export default {
       type: Array,
       default: null,
     },
+    inputStyle: {
+      type: null,
+      default: null,
+    },
+    inputClass: {
+      type: String,
+      default: null,
+    },
+    disabled: {
+      type: Boolean,
+      default: false,
+    },
+    placeholder: {
+      type: String,
+      default: null,
+    },
+    tabindex: {
+      type: Number,
+      default: 0,
+    },
   },
   data() {
     return {
-      inputProps: null,
+      inputValue: "",
+      autocomplete: [],
+      overlayVisible: false,
+      tabIndex: 0,
     };
+  },
+  methods: {
+    onInput() {
+      setTimeout(() => {
+        if (!this.inputValue.length) {
+          this.autocomplete = [];
+        } else {
+          this.autocomplete = this.suggestions.filter((option) => {
+            return option.label
+              .toLowerCase()
+              .startsWith(this.inputValue.toLowerCase());
+          });
+        }
+
+        this.show();
+      }, 150);
+
+      if (this.inputValue === "") {
+        this.$emit("clear");
+      }
+    },
+    onFocus(event) {
+      this.$emit("focus", event);
+    },
+    onBlur(event) {
+      this.$emit("blur", event);
+    },
+    onKeyDown(event) {
+      switch (event.code) {
+        case "ArrowDown":
+          this.onDownKey(event);
+          break;
+        case "ArrowUp":
+          this.onUpKey(event);
+          break;
+        case "PageDown":
+          this.onDownKey(event);
+          break;
+        case "PageUp":
+          this.onUpKey(event);
+          break;
+        case "Enter":
+          this.onEnterKey(event);
+          break;
+        default:
+          break;
+      }
+    },
+    onChange() {
+      console.log("onChange");
+    },
+    onDownKey(event) {
+      console.log(event);
+      if (this.tabIndex < this.autocomplete.length) {
+        this.tabIndex++;
+        this.changeFocus();
+      }
+    },
+    onUpKey(event) {
+      console.log(event);
+      if (this.tabIndex > 1) {
+        this.tabIndex--;
+        this.changeFocus();
+      }
+    },
+    onEnterKey(event) {
+      console.log(event);
+    },
+    onOptionSelect(event, option) {
+      this.add(option);
+      this.$emit("item-select", { originalEvent: event, value: option });
+    },
+    show() {
+      this.$emit("before-show");
+      if (this.inputValue && this.autocomplete.length) {
+        this.overlayVisible = true;
+      } else {
+        this.hide();
+      }
+    },
+    hide() {
+      const _hide = () => {
+        this.$emit("before-hide");
+
+        this.overlayVisible = false;
+      };
+      setTimeout(() => {
+        _hide();
+      }, 0);
+    },
+    add(option) {
+      this.inputValue = option.label;
+      this.hide();
+    },
+    changeFocus() {
+      const el = this.$refs.optionsContainer;
+      console.log("tabIndex: ", this.tabIndex);
+      el.childNodes[this.tabIndex].focus();
+    },
+  },
+  mounted() {
+    document.addEventListener("click", this.hide.bind(this));
+  },
+  unmounted() {
+    document.removeEventListener("click", this.hide.bind(this));
   },
 };
 </script>
@@ -100,8 +245,12 @@ export default {
   transition: box-shadow 0.2s;
 }
 
-.select__items .select__item:hover {
+.select__items .select__item:hover,
+.select__items .select__item:focus,
+.focus {
   color: #495057;
   background: #e9ecef;
+  border: none;
+  outline: none;
 }
 </style>
