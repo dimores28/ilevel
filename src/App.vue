@@ -3,7 +3,11 @@
     <img alt="logo" src="./assets/logo.png" width="150" />
   </div>
   <div class="select-wrapp">
-    <v-select :suggestions="options"></v-select>
+    <v-select
+      :suggestions="options"
+      @item-select="selected"
+      v-model="selectedCountry"
+    ></v-select>
   </div>
 </template>
 
@@ -12,7 +16,7 @@ import vSelect from "@/components/v-select";
 export default {
   name: "App",
   components: {
-    vSelect,
+    vSelect
   },
   data() {
     return {
@@ -259,10 +263,16 @@ export default {
         { label: "Western Sahara", value: "EH" },
         { label: "Yemen", value: "YE" },
         { label: "Zambia", value: "ZM" },
-        { label: "Zimbabwe", value: "ZW" },
+        { label: "Zimbabwe", value: "ZW" }
       ],
+      selectedCountry: null
     };
   },
+  methods: {
+    selected(option) {
+      console.log(option.value);
+    }
+  }
 };
 </script>
 

@@ -19,9 +19,10 @@
     <div v-if="overlayVisible" ref="overlayRef" class="select__options">
       <ul ref="optionsContainer" class="select__items" role="listbox">
         <li
-          v-for="option in autocomplete"
+          v-for="(option, i) in autocomplete"
           :key="option.value"
           class="select__item"
+          :class="{ focus: focusedOptionIndex === i }"
           role="option"
           :aria-label="option.label"
           tabindex="-1"
@@ -38,42 +39,56 @@
 <script>
 export default {
   name: "MySelect",
+  emits: [
+    "update:inputValue",
+    "change",
+    "focus",
+    "blur",
+    "item-select",
+    "clear",
+    "show",
+    "hide",
+    "DownKey-click",
+    "UpKey-click",
+    "EnterKey-click"
+  ],
   props: {
     suggestions: {
       type: Array,
-      default: null,
+      default: null
     },
     inputStyle: {
       type: null,
-      default: null,
+      default: null
     },
     inputClass: {
       type: String,
-      default: null,
+      default: null
     },
     disabled: {
       type: Boolean,
-      default: false,
+      default: false
     },
     placeholder: {
       type: String,
-      default: null,
+      default: null
     },
     tabindex: {
       type: Number,
-      default: 0,
-    },
+      default: 0
+    }
   },
   data() {
     return {
       inputValue: "",
+      select: null,
       autocomplete: [],
       overlayVisible: false,
-      tabIndex: 0,
+      focusedOptionIndex: 0
     };
   },
   methods: {
-    onInput() {
+    onInput(event) {
       setTimeout(() => {
         if (!this.inputValue.length) {
           this.autocomplete = [];
@@ -89,7 +104,7 @@ export default {
       }, 150);
 
       if (this.inputValue === "") {
-        this.$emit("clear");
+        this.$emit("clear", event);
       }
     },
     onFocus(event) {
@@ -119,32 +134,45 @@ export default {
           break;
       }
     },
-    onChange() {
-      console.log("onChange");
+    onChange(event) {
+      this.$emit("change", event);
+
+      if (this.inputValue === "") {
+        this.$emit("clear", event);
+      }
     },
     onDownKey(event) {
-      console.log(event);
-      if (this.tabIndex < this.autocomplete.length) {
-        this.tabIndex++;
-        this.changeFocus();
+      this.$emit("DownKey-click", event);
+      event.preventDefault();
+      if (this.focusedOptionIndex < this.autocomplete.length - 1) {
+        this.focusedOptionIndex++;
       }
+      this.scroll();
     },
     onUpKey(event) {
-      console.log(event);
-      if (this.tabIndex > 1) {
-        this.tabIndex--;
-        this.changeFocus();
+      this.$emit("UpKey-click", event);
+      event.preventDefault();
+      if (this.focusedOptionIndex > 0) {
+        this.focusedOptionIndex--;
       }
+      this.scroll();
     },
     onEnterKey(event) {
-      console.log(event);
+      this.$emit("EnterKey-click", event);
+      const elements = this.$refs.optionsContainer;
+      for (let node of elements.childNodes) {
+        if (node.classList !== undefined && node.classList.contains("focus")) {
+          node.click();
+          return;
+        }
+      }
     },
     onOptionSelect(event, option) {
       this.add(option);
       this.$emit("item-select", { originalEvent: event, value: option });
     },
     show() {
-      this.$emit("before-show");
+      this.$emit("show");
       if (this.inputValue && this.autocomplete.length) {
         this.overlayVisible = true;
       } else {
@@ -153,9 +181,9 @@ export default {
     },
     hide() {
       const _hide = () => {
-        this.$emit("before-hide");
-
+        this.$emit("hide");
         this.overlayVisible = false;
+        this.focusedOptionIndex = 0;
       };
       setTimeout(() => {
         _hide();
@@ -163,20 +191,29 @@ export default {
     },
     add(option) {
       this.inputValue = option.label;
+      this.select = option;
       this.hide();
     },
-    changeFocus() {
-      const el = this.$refs.optionsContainer;
-      console.log("tabIndex: ", this.tabIndex);
-      el.childNodes[this.tabIndex].focus();
-    },
+    scroll() {
+      const overlay = this.$refs.overlayRef;
+
+      const elements = this.$refs.optionsContainer;
+      for (let node of elements.childNodes) {
+        if (node.classList !== undefined && node.classList.contains("focus")) {
+          // console.log("node top: ", node.offsetTop);
+          // console.log("scrol top: ", overlay.scrollTop);
+          overlay.scrollTop = node.offsetTop - node.scrollHeight;
+          return;
+        }
+      }
+    }
   },
   mounted() {
     document.addEventListener("click", this.hide.bind(this));
   },
   unmounted() {
     document.removeEventListener("click", this.hide.bind(this));
-  },
+  }
 };
 </script>
 
