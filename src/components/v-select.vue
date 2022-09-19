@@ -147,7 +147,7 @@ export default {
       if (this.focusedOptionIndex < this.autocomplete.length - 1) {
         this.focusedOptionIndex++;
       }
-      this.scroll();
+      this.scroll("down");
     },
     onUpKey(event) {
       this.$emit("UpKey-click", event);
@@ -155,7 +155,7 @@ export default {
       if (this.focusedOptionIndex > 0) {
         this.focusedOptionIndex--;
       }
-      this.scroll();
+      this.scroll("up");
     },
     onEnterKey(event) {
       this.$emit("EnterKey-click", event);
@@ -194,15 +194,27 @@ export default {
       this.select = option;
       this.hide();
     },
-    scroll() {
+    scroll(direction) {
       const overlay = this.$refs.overlayRef;
+      if (overlay === undefined) {
+        return;
+      }
 
       const elements = this.$refs.optionsContainer;
       for (let node of elements.childNodes) {
         if (node.classList !== undefined && node.classList.contains("focus")) {
-          // console.log("node top: ", node.offsetTop);
-          // console.log("scrol top: ", overlay.scrollTop);
-          overlay.scrollTop = node.offsetTop - node.scrollHeight;
+          switch (direction) {
+            case "up":
+              overlay.scrollTop = node.offsetTop - node.scrollHeight;
+              break;
+            case "down":
+              overlay.scrollTop =
+                node.offsetTop - node.scrollHeight - overlay.offsetTop;
+              break;
+            default:
+              break;
+          }
+
           return;
         }
       }
