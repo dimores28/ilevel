@@ -5,6 +5,7 @@
   <div class="select-wrapp">
     <v-select
       :suggestions="options"
+      :dropdown="true"
       @item-select="selected"
       v-model="selectedCountry"
     ></v-select>

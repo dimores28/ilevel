@@ -1,38 +1,53 @@
 <template>
   <div ref="container" class="select">
-    <input
-      type="text"
-      class="select__input"
-      :class="inputClass"
-      :style="inputStyle"
-      :placeholder="placeholder"
-      :tabindex="!disabled ? tabindex : -1"
-      :disabled="disabled"
-      v-model="inputValue"
-      @input="onInput"
-      @focus="onFocus"
-      @blur="onBlur"
-      @keydown="onKeyDown"
-      @change="onChange"
-    />
-
-    <div v-if="overlayVisible" ref="overlayRef" class="select__options">
-      <ul ref="optionsContainer" class="select__items" role="listbox">
-        <li
-          v-for="(option, i) in autocomplete"
-          :key="option.value"
-          class="select__item"
-          :class="{ focus: focusedOptionIndex === i }"
-          role="option"
-          :aria-label="option.label"
-          tabindex="-1"
-          @click="onOptionSelect($event, option)"
-          @keydown.enter="add(option)"
-        >
-          {{ option.label }}
-        </li>
-      </ul>
+    <div>
+      <input
+        type="text"
+        class="select__input"
+        :class="[inputClass, { select__input_dd: dropdown }]"
+        :style="inputStyle"
+        :placeholder="placeholder"
+        :tabindex="!disabled ? tabindex : -1"
+        :disabled="disabled"
+        v-model="inputValue"
+        @input="onInput"
+        @focus="onFocus"
+        @blur="onBlur"
+        @keydown="onKeyDown"
+        @change="onChange"
+      />
+      <button
+        v-if="dropdown"
+        ref="dropdownButton"
+        type="button"
+        tabindex="0"
+        class="select__dropdown"
+        :disabled="disabled"
+        @click.stop="onDropdownClick"
+        @keydown="onKeyDown"
+      >
+        .
+      </button>
     </div>
+    <transition name="fade">
+      <div v-if="overlayVisible" ref="overlayRef" class="select__options">
+        <ul ref="optionsContainer" class="select__items" role="listbox">
+          <li
+            v-for="(option, i) in autocomplete"
+            :key="option.value"
+            class="select__item"
+            :class="{ focus: focusedOptionIndex === i }"
+            role="option"
+            :aria-label="option.label"
+            tabindex="-1"
+            @click="onOptionSelect($event, option)"
+            @keydown.enter="add(option)"
+          >
+            {{ option.label }}
+          </li>
+        </ul>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -76,6 +91,10 @@ export default {
     tabindex: {
       type: Number,
       default: 0
+    },
+    dropdown: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
@@ -160,10 +179,16 @@ export default {
     onEnterKey(event) {
       this.$emit("EnterKey-click", event);
       const elements = this.$refs.optionsContainer;
-      for (let node of elements.childNodes) {
-        if (node.classList !== undefined && node.classList.contains("focus")) {
-          node.click();
-          return;
+
+      if (elements && elements.childNodes) {
+        for (let node of elements.childNodes) {
+          if (
+            node.classList !== undefined &&
+            node.classList.contains("focus")
+          ) {
+            node.click();
+            return;
+          }
         }
       }
     },
@@ -171,9 +196,21 @@ export default {
       this.add(option);
       this.$emit("item-select", { originalEvent: event, value: option });
     },
+    onDropdownClick() {
+      if (this.overlayVisible) {
+        this.autocomplete = [];
+        this.hide();
+      } else {
+        this.autocomplete = [...this.suggestions];
+        this.show();
+      }
+    },
     show() {
       this.$emit("show");
-      if (this.inputValue && this.autocomplete.length) {
+      if (
+        (this.inputValue && this.autocomplete.length) ||
+        this.autocomplete.length
+      ) {
         this.overlayVisible = true;
       } else {
         this.hide();
@@ -201,6 +238,7 @@ export default {
       }
 
       const elements = this.$refs.optionsContainer;
+
       for (let node of elements.childNodes) {
         if (node.classList !== undefined && node.classList.contains("focus")) {
           switch (direction) {
@@ -250,7 +288,8 @@ export default {
   border-radius: 6px;
 }
 
-.select__input:enabled:focus {
+.select__input:enabled:focus,
+.select__dropdown:enabled:focus {
   outline: 0 none;
   outline-offset: 0;
   box-shadow: 0 0 0 0.2rem #bfdbfe;
@@ -301,5 +340,56 @@ export default {
   background: #e9ecef;
   border: none;
   outline: none;
+}
+
+.select__dropdown {
+  width: 3rem;
+  color: transparent;
+  background: #3b82f6;
+  border: 1px solid #3b82f6;
+  padding: 0.75rem 0;
+  font-size: 1rem;
+  margin: 0;
+  cursor: pointer;
+  user-select: none;
+  align-items: center;
+  vertical-align: bottom;
+  text-align: center;
+  overflow: hidden;
+  position: relative;
+  border-radius: 6px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0px;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.select__input_dd {
+  min-width: auto;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.select__dropdown::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-top: 2px solid #fff !important;
+  border-right: 2px solid #fff !important;
+  display: inline-block;
+  transition: 1s;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -60%) rotate(135deg);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s;
+}
+.fade-enter,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
