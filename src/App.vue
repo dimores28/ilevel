@@ -10,14 +10,37 @@
       v-model="selectedCountry"
     ></v-select>
   </div>
+
+  <button @click="openPopup">Открыть окно</button>
+  <v-popup
+    :is-open="isPopupOpen"
+    @ok="popupConfirmed"
+    @close="isPopupOpen = false"
+  >
+    Вы действительно хотите освоить правильные подходы к проектированию систем
+    во Vue?
+    <template #actions="{ confirm }">
+      Напишіть
+      <input
+        type="text"
+        :placeholder="$options.CONFIRMATION_TEXT"
+        v-model="confirmation"
+      />
+      &nbsp;
+      <button @click="confirm" :disabled="!isConfirmationCorrect">Ok</button>
+    </template>
+  </v-popup>
 </template>
 
 <script>
 import vSelect from "@/components/v-select";
+import vPopup from "./components/Popup.vue";
+
 export default {
   name: "App",
   components: {
-    vSelect
+    vSelect,
+    vPopup
   },
   data() {
     return {
@@ -266,12 +289,30 @@ export default {
         { label: "Zambia", value: "ZM" },
         { label: "Zimbabwe", value: "ZW" }
       ],
-      selectedCountry: null
+      selectedCountry: null,
+      isPopupOpen: false,
+      confirmation: ""
     };
+  },
+
+  CONFIRMATION_TEXT: "ПІДТВЕРДЖУЮ",
+
+  computed: {
+    isConfirmationCorrect() {
+      return this.confirmation === this.$options.CONFIRMATION_TEXT;
+    }
   },
   methods: {
     selected(option) {
       console.log(option.value);
+    },
+    popupConfirmed() {
+      alert("Confirmed!!!");
+      this.isPopupOpen = false;
+    },
+    openPopup() {
+      this.isPopupOpen = true;
+      this.confirmation = "";
     }
   }
 };
