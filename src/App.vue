@@ -11,12 +11,8 @@
     ></v-select>
   </div>
 
-  <button @click="openPopup">Открыть окно</button>
-  <v-popup
-    :is-open="isPopupOpen"
-    @ok="popupConfirmed"
-    @close="isPopupOpen = false"
-  >
+  <button @click="lernVue">Открыть окно</button>
+  <v-popup ref="confirmationPopup">
     Вы действительно хотите освоить правильные подходы к проектированию систем
     во Vue?
     <template #actions="{ confirm }">
@@ -290,7 +286,6 @@ export default {
         { label: "Zimbabwe", value: "ZW" }
       ],
       selectedCountry: null,
-      isPopupOpen: false,
       confirmation: ""
     };
   },
@@ -306,13 +301,13 @@ export default {
     selected(option) {
       console.log(option.value);
     },
-    popupConfirmed() {
-      alert("Confirmed!!!");
-      this.isPopupOpen = false;
-    },
-    openPopup() {
-      this.isPopupOpen = true;
+    async lernVue() {
       this.confirmation = "";
+      const popupResult = await this.$refs.confirmationPopup.open();
+
+      if (popupResult) {
+        alert("Confirmed!!!");
+      }
     }
   }
 };

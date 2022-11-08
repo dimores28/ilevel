@@ -18,28 +18,40 @@
 
 <script>
 export default {
+  currentPopupController: null,
+
   name: "vPopup",
-  props: {
-    isOpen: {
-      type: Boolean,
-      required: true
-    }
-  },
-  emits: {
-    ok: null,
-    close: null
+  data() {
+    return {
+      isOpen: false
+    };
   },
   methods: {
-    close() {
-      this.$emit("close");
-    },
-    confirm() {
-      this.$emit("ok");
-    },
     andleKeydown(e) {
       if (this.isOpen && e.key === "Escape") {
         this.close();
       }
+    },
+    open() {
+      let resolve;
+      let reject;
+      const popupPromise = new Promise((ok, fail) => {
+        resolve = ok;
+        reject = fail;
+      });
+
+      this.$options.currentPopupController = { resolve, reject };
+      this.isOpen = true;
+
+      return popupPromise;
+    },
+    confirm() {
+      this.$options.currentPopupController.resolve(true);
+      this.isOpen = false;
+    },
+    close() {
+      this.$options.currentPopupController.resolve(false);
+      this.isOpen = false;
     }
   },
   mounted() {
